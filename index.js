@@ -12,9 +12,9 @@ app.use(express.static('public'))
 
 
 const USERS = []
+const EXERCISES = [] 
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/views/index.html')
+app.get('/', (req, res) => { res.sendFile(__dirname + '/views/index.html')
 });
 
 
@@ -54,15 +54,16 @@ app.get('/api/users', (req, res) => {
 
 
 app.post('/api/users/:_id/exercises', (req, res, next) => {
-    let exercises = {};
     let userId = req.params._id
     let userFound = false;
+    let exercises = []
 
     for (let user of USERS) {
         if (user._id === userId){
             let exercise = req.body;
             let { [':_id']: _, ...rest } = exercise;
-            Object.assign(user, rest);
+	    exercises.push(rest)
+	    user.exercises = exercises
             res.json(user);
             userFound = true;
             break; 
@@ -73,7 +74,28 @@ app.post('/api/users/:_id/exercises', (req, res, next) => {
     }
 });
 
-
+app.get('/api/users/:_id/logs', (req, res) => {
+	let userId = req.params._id
+	let user = USERS.find(user => user._id === userId)
+	let count = 0
+	let log = []
+	for (let exercise of EXERCISES){
+		if(userId === exercise[':_id']){
+			count += 1
+			let {[':_id']:_, ...rest} = exercise
+			log.push(rest)
+			continue
+		}
+	}
+	if(count > 0){
+		user.log = log
+		user.count = count
+		res.json({user})
+	}else{
+		res.json({message: 'No logs on requested user'})
+	}
+})
+			
 const listener = app.listen(process.env.PORT || 3000, () => {
   console.log('Your app is listening on port ' + listener.address().port)
 })
